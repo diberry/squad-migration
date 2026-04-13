@@ -4,6 +4,10 @@ export * from './types/migration';
 export * from './config/loader';
 export * from './state/manager';
 export * from './events/bus';
+export * from './agents/analyzer';
+export * from './agents/transformer';
+export * from './agents/tester';
+export * from './planner';
+export * from './executor';
+export * from './cli/progress';
 export * from './orchestrator';
-
-// Main entry point for the migration tool

@@ -1,36 +1,49 @@
-// Event bus integration with Squad SDK
-
 import type { MigrationEvent } from '../types/migration';
 
-/**
- * Wraps Squad SDK EventBus for migration-specific events
- */
+export type MigrationEventHandler = (event: MigrationEvent) => void;
+
 export class MigrationEventBus {
-  constructor() {
-    // TODO: Initialize with Squad EventBus
-  }
+  private handlers = new Map<string, Set<MigrationEventHandler>>();
+  private allHandlers = new Set<MigrationEventHandler>();
+  private eventLog: MigrationEvent[] = [];
 
-  /**
-   * Emit migration event
-   */
   emit(event: MigrationEvent): void {
-    // TODO: Implement event emission
-    throw new Error('Not implemented');
+    const enriched = { ...event, timestamp: event.timestamp || Date.now() };
+    this.eventLog.push(enriched);
+    const typeHandlers = this.handlers.get(enriched.type);
+    if (typeHandlers) {
+      for (const handler of typeHandlers) handler(enriched);
+    }
+    for (const handler of this.allHandlers) handler(enriched);
   }
 
-  /**
-   * Listen for events
-   */
-  on(eventType: string, handler: (event: MigrationEvent) => void): void {
-    // TODO: Implement event listener
-    throw new Error('Not implemented');
+  on(eventType: string, handler: MigrationEventHandler): void {
+    if (!this.handlers.has(eventType)) {
+      this.handlers.set(eventType, new Set());
+    }
+    this.handlers.get(eventType)!.add(handler);
   }
 
-  /**
-   * Unsubscribe from events
-   */
-  off(eventType: string, handler: (event: MigrationEvent) => void): void {
-    // TODO: Implement unsubscribe
-    throw new Error('Not implemented');
+  onAny(handler: MigrationEventHandler): void {
+    this.allHandlers.add(handler);
+  }
+
+  off(eventType: string, handler: MigrationEventHandler): void {
+    const typeHandlers = this.handlers.get(eventType);
+    if (typeHandlers) typeHandlers.delete(handler);
+  }
+
+  offAny(handler: MigrationEventHandler): void {
+    this.allHandlers.delete(handler);
+  }
+
+  getEventLog(): MigrationEvent[] {
+    return [...this.eventLog];
+  }
+
+  clear(): void {
+    this.handlers.clear();
+    this.allHandlers.clear();
+    this.eventLog = [];
   }
 }
