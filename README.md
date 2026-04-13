@@ -8,8 +8,8 @@ A migration orchestration framework built on **Squad SDK** that parallelizes fra
 
 - **Automated Codebase Analysis** — Scans codebases for files matching migration patterns, builds dependency graphs, and estimates complexity
 - **Intelligent Batching** — Groups files into parallel-safe batches respecting dependency order and resource constraints
-- **Parallel Transformation** — Runs multiple transformer agents concurrently using Squad's worker pool
-- **Automated Test Validation** — Runs test suites after each batch to catch regressions immediately
+- **Parallel Transformation** — Runs multiple transformer agents concurrently using Squad's worker pool (transforms are pattern-based string replacement for demonstration — production use would integrate AST-based tools like jscodeshift or ts-morph)
+- **Automated Test Validation** — Runs a configurable test command after each batch to catch regressions (falls back to simulated pass when no test command is configured)
 - **Safe Rollback** — Reverts failed batches to pre-migration state without affecting completed work
 - **Real-Time Progress Tracking** — Live CLI dashboard showing migration progress, batch status, and ETAs
 - **State Persistence** — Resumes migrations across sessions using Squad's state layer
@@ -206,9 +206,9 @@ Quick overview:
 cp migration-config.example.json my-migration.json
 # Edit my-migration.json with your settings
 
-# 2. Run the full pipeline
+# 2. Build and run the orchestrator
 npm run build
-node dist/orchestrator.js /path/to/codebase my-migration.json
+node dist/index.js /path/to/codebase my-migration.json
 
 # 3. Monitor progress in the CLI dashboard
 # (live batch status, file count, time remaining)

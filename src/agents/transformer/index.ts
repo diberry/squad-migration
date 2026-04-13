@@ -1,3 +1,5 @@
+// DEMONSTRATION: Production transforms should use AST-based tools
+// like jscodeshift or ts-morph instead of pattern-based string replacement.
 import type { TransformResult } from '../../types/migration';
 import type { MigrationConfig } from '../../types/config';
 import * as fs from 'node:fs';
@@ -26,13 +28,15 @@ export class TransformerAgent {
     }
   }
 
+  // DEMONSTRATION: These transforms are pattern-based string replacement.
+  // Production use should integrate AST-based tools (jscodeshift, ts-morph).
   private applyTransformations(content: string, filePath: string): { content: string; changeCount: number } {
     let result = content;
     let changeCount = 0;
     const source = this.config.source.framework;
     const target = this.config.target.framework;
 
-    // Replace framework imports
+    // Replace framework imports (simple string match — not AST-aware)
     const importRegex = new RegExp(`(['"])${source}\\1`, 'g');
     const matches = result.match(importRegex);
     if (matches) {

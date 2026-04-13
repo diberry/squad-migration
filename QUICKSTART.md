@@ -37,13 +37,13 @@ npm test
 
 **Expected output:**
 ```
-✓ src/types/config.test.ts (12 tests)
-✓ src/config/loader.test.ts (8 tests)
-✓ src/state/manager.test.ts (10 tests)
-... (all 100+ tests passing)
+✓ test/features/config.test.ts (5 tests)
+✓ test/features/state.test.ts (5 tests)
+✓ test/features/events.test.ts (6 tests)
+... (all 57 tests passing)
 
-Test Files  15 passed (15)
-Tests       150 passed (150)
+Test Files  13 passed (13)
+Tests       57 passed (57)
 ```
 
 ## Your First Migration: Express → Fastify
@@ -113,7 +113,7 @@ cd my-app
 
 ```bash
 # From project root
-node dist/orchestrator.js init /path/to/my-app my-first-migration.json
+node dist/index.js init /path/to/my-app my-first-migration.json
 ```
 
 **Expected output:**
@@ -131,13 +131,13 @@ node dist/orchestrator.js init /path/to/my-app my-first-migration.json
 
 ✅ State initialized: .squad/migration-state.json
 
-Ready to run: npm run migrate
+Ready to run: node dist/index.js run /path/to/my-app my-first-migration.json
 ```
 
 ### Step 4: Run the Full Migration
 
 ```bash
-node dist/orchestrator.js run /path/to/my-app my-first-migration.json
+node dist/index.js run /path/to/my-app my-first-migration.json
 ```
 
 **This executes:**
@@ -219,7 +219,7 @@ What would you like to do?
 After completion:
 
 ```bash
-npm run report
+node dist/index.js report /path/to/my-app
 ```
 
 **Example output:**
@@ -254,8 +254,8 @@ Failed Files (review manually):
 
 Next Steps:
   1. Fix src/routes/users.ts manually
-  2. Run npm run validate to confirm tests pass
-  3. Run: npm run migrate -- --resume to continue
+  2. Run `npm test` to confirm tests pass
+  3. Run: node dist/index.js run . my-first-migration.json --resume
 ```
 
 ### Step 8: Create Pull Request
@@ -284,7 +284,7 @@ gh pr create --base main --title "Migrate from Express to Fastify"
 If you stopped mid-migration:
 
 ```bash
-node dist/orchestrator.js run /path/to/my-app my-first-migration.json --resume
+node dist/index.js run /path/to/my-app my-first-migration.json --resume
 ```
 
 The orchestrator skips already-migrated files and resumes from the next pending batch.
@@ -294,7 +294,7 @@ The orchestrator skips already-migrated files and resumes from the next pending 
 See what *would* be migrated without making changes:
 
 ```bash
-node dist/orchestrator.js analyze /path/to/my-app my-first-migration.json
+node dist/index.js analyze /path/to/my-app my-first-migration.json
 ```
 
 **Output:**
@@ -314,7 +314,7 @@ Estimated cost: 240 API tokens
 After manually fixing a failed file:
 
 ```bash
-node dist/orchestrator.js validate /path/to/my-app
+node dist/index.js validate /path/to/my-app
 ```
 
 **Output:**
@@ -329,7 +329,7 @@ Running tests...
 If things went wrong:
 
 ```bash
-node dist/orchestrator.js rollback /path/to/my-app
+node dist/index.js rollback /path/to/my-app
 ```
 
 **This:**
@@ -343,7 +343,7 @@ node dist/orchestrator.js rollback /path/to/my-app
   Git history: Reset to commit abc123d
 
 ✅ Codebase is back to original state
-Run: npm run migrate (to try again)
+Run: node dist/index.js run /path/to/my-app my-first-migration.json (to try again)
 ```
 
 ## Tips & Tricks
@@ -385,7 +385,7 @@ Shows every step taken and timestamps.
 If transformation isn't working:
 
 ```bash
-node dist/orchestrator.js debug /path/to/my-app my-first-migration.json
+node dist/index.js debug /path/to/my-app my-first-migration.json
 ```
 
 Shows internal agent reasoning and pattern matching.
@@ -416,7 +416,7 @@ Reference in config: `"skills": ["my-patterns/custom-transform"]`
 1. Check failed file output: `cat .squad/migration-state.json | jq '.files[] | select(.status=="failed")'`
 2. Review transformation: `git diff HEAD~ -- <filename>`
 3. Update skill pattern in config
-4. Retry: `npm run migrate -- --resume`
+4. Retry: `node dist/index.js run /path/to/my-app my-first-migration.json --resume`
 
 ### "Out of API quota during parallel batches"
 
