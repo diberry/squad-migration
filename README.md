@@ -10,173 +10,80 @@ Orchestrate large-scale code migrations using **Squad SDK** agents that work in 
 git clone https://github.com/bradygaster/squad-sdk-example-migration.git
 cd project-squad-sdk-example-migration
 npm install && npm run build
+npm link   # makes `squad-migrate` available globally
 ```
 
-### Create a Migration Config
+### CLI Commands
 
-Migration config files tell Squad how to orchestrate your migration. Save as JSON:
-
-```json
-{
-  "name": "express-to-fastify",
-  "source": {
-    "framework": "express",
-    "pattern": "src/**/*.ts"
-  },
-  "target": {
-    "framework": "fastify",
-    "version": "4.0.0"
-  },
-  "agents": {
-    "analyzer": { "model": "claude-opus-4" },
-    "transformer": { "model": "claude-opus-4" },
-    "tester": { "model": "gpt-5" }
-  },
-  "batching": {
-    "filesPerBatch": 10,
-    "parallelBatches": 3
-  },
-  "rollback": {
-    "onTestFailure": true
-  },
-  "skills": ["express-to-fastify-patterns", "middleware-adapter"]
-}
-```
-
-**Key fields:**
-- **source/target** — Framework + version
-- **agents** — AI model for each migration phase (analyzer, transformer, tester)
-- **batching** — Files per batch + parallel limit
-- **rollback** — Auto-revert on test failure
-- **skills** — Transformation patterns to load
-
-### Run the Migration
+All commands use the `squad-migrate` CLI:
 
 ```bash
-# Analyze files & create batches
-npm run build
-node dist/index.js init /path/to/codebase migration.json
-
-# Execute migration with monitoring
-node dist/index.js run /path/to/codebase migration.json
+squad-migrate init [--config path]      # Create a sample migration.json
+squad-migrate analyze --config path     # Analyze source files (dry-run)
+squad-migrate run --config path         # Execute migration batches
+squad-migrate status --config path      # Show per-file migration status
+squad-migrate rollback --config path    # Rollback last migration
 ```
 
-**The orchestrator:**
-1. Scans files matching your pattern
-2. Builds dependency graph
-3. Creates parallel-safe batches
-4. Transforms files concurrently
-5. Runs tests after each batch
-6. Rolls back on failure or commits on success
+If you haven't run `npm link`, use `node dist/cli/main.js` instead of `squad-migrate`.
 
-### Monitor Progress
-
-Real-time CLI dashboard shows:
-- Files processed / total
-- Batch status (✅ passed, ❌ failed, ⏳ running)
-- Time remaining + throughput
-- Current file being transformed
-
-You can also check state:
-```bash
-cat .squad/migration-state.json | jq '.files | group_by(.status) | map({status: .[0].status, count: length})'
-```
-
-### Handle Rollbacks
-
-If tests fail after transformation:
+### Quick Start
 
 ```bash
-# Orchestrator automatically:
-# 1. Stops remaining batches
-# 2. Reverts failed batch to original code
-# 3. Prompts for action: retry, skip, review, or cancel
+# 1. Generate a sample config
+squad-migrate init --config migration.json
 
-# If you want manual rollback:
-node dist/index.js rollback /path/to/codebase
+# 2. Edit migration.json for your project (source pattern, target framework, etc.)
+
+# 3. Analyze your codebase (dry-run, no changes)
+squad-migrate analyze --config migration.json
+
+# 4. Run the migration
+squad-migrate run --config migration.json
+
+# 5. Check progress
+squad-migrate status --config migration.json
+
+# 6. Rollback if needed
+squad-migrate rollback --config migration.json
 ```
 
-This restores all files and resets git history to pre-migration state.
+### Migration Config
+
+The `squad-migrate init` command creates a sample `migration.json`. Key fields:
+
+| Field | Purpose |
+|-------|---------|
+| `name` | Migration identifier |
+| `source.framework` | Source framework (e.g., `express`) |
+| `source.pattern` | Glob for files to migrate (e.g., `src/**/*.ts`) |
+| `target.framework` | Target framework (e.g., `fastify`) |
+| `target.version` | Target version |
+| `agents.*` | AI model for each phase (analyzer, transformer, tester, reviewer) |
+| `batching.filesPerBatch` | Files per batch (1–100) |
+| `batching.parallelBatches` | Concurrent batch limit |
+| `rollback.onTestFailure` | Auto-revert on test failure |
+
+See [`examples/migration.json`](./examples/migration.json) for a complete sample.
 
 ### Expected Output
 
 ```
 🚀 Migration: express-to-fastify
+   Analyzed 42 files
+   Created 9 batches
+   ✅ batch-1 completed
+   ✅ batch-2 completed
 
-[Analyzing] ████████████████ 100% (42 files)
-[Planning]  ████████████████ 100% (9 batches)
-[Executing] ████████░░░░░░░░ 45% (19/42 migrated)
-  📦 Batch 1: ✅ PASSED (5 files, 12s)
-  📦 Batch 2: ✅ PASSED (5 files, 11s)
-  📦 Batch 3: ⏳ IN PROGRESS (3/5 files done)
-
-⏱ ETA: ~18 min | 🎯 Success: 100% (19/19)
-
-📊 Final Report:
-   Total: 42 | Migrated: 40 | Failed: 1 | Skipped: 1
-   Time: 22m 30s | Throughput: 1.8 files/min
+═══ Migration Complete ═══
+  Migrated: 40
+  Failed:   1
+  Skipped:  1
+  Duration: 22m 30s
+══════════════════════════
 ```
-
-No file contents are printed — only counts, timings, and batch status.
 
 ## Extending This Example
-
-### Add Custom Transform Rules
-
-Transform rules live in the `skills/` directory. To add a custom pattern:
-
-```bash
-# 1. Create skill file
-mkdir -p src/skills/custom
-cat > src/skills/custom/my-transform.ts << 'EOF'
-export const myTransform = (code: string): string => {
-  // Your transformation logic (simple string replacement)
-  // For production: use jscodeshift, ts-morph, or other AST tool
-  return code.replace(/oldPattern/g, 'newPattern');
-};
-EOF
-
-# 2. Register in skills registry
-# (see src/skills/index.ts for registry pattern)
-
-# 3. Reference in config
-{
-  "skills": ["custom/my-transform"]
-}
-
-# 4. Run migration
-npm run build
-node dist/index.js run /path/to/codebase migration.json
-```
-
-### Integrate AST-Based Tools
-
-For complex transformations, integrate **jscodeshift**, **ts-morph**, or **TypeScript Compiler API**:
-
-1. Install: `npm install jscodeshift @types/jscodeshift`
-2. Write codemod in `src/skills/`:
-
-```typescript
-import jscodeshift, { FileInfo } from 'jscodeshift';
-
-export const expressToFastifyCodemod = (fileInfo: FileInfo) => {
-  const j = jscodeshift;
-  const root = j(fileInfo.source);
-
-  // Transform AST
-  root.find(j.ImportDeclaration)
-    .filter(path => path.value.source.value === 'express')
-    .replaceWith(path => {
-      path.value.source.value = 'fastify';
-      return path.value;
-    });
-
-  return root.toSource();
-};
-```
-
-3. Call from transformer agent
-4. Reference in config
 
 ### Programmatic API
 
@@ -249,14 +156,15 @@ project-squad-sdk-example-migration/
 │   ├── executor/
 │   │   └── index.ts         # Execute batches with progress tracking
 │   ├── cli/
+│   │   ├── main.ts          # CLI entry point (squad-migrate)
 │   │   └── progress.ts      # Real-time progress display
 │   ├── orchestrator/
 │   │   └── index.ts         # Coordinate full pipeline
 │   ├── report/
 │   │   └── reporter.ts      # Generate final migration report
-│   ├── skills/
-│   │   └── index.ts         # Transform rule registry
 │   └── index.ts             # Main export barrel
+├── examples/
+│   └── migration.json       # Sample migration config
 ├── test/
 │   ├── features/            # Feature-level tests (TDD)
 │   ├── integration/         # End-to-end tests
@@ -275,7 +183,6 @@ project-squad-sdk-example-migration/
 | `builders.defineAgent()` | Create migration-specific agents (Analyzer, Transformer, Tester) |
 | `runtime.EventBus` | Track migration progress events |
 | `state.SquadState` | Persist per-file migration status, resume across sessions |
-| `skills.SkillRegistry` | Load migration-specific transformation skills |
 | `hooks.HookPipeline` | Enforce migration rules and state transitions |
 
 ## Testing

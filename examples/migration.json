@@ -1,0 +1,24 @@
+{
+  "name": "express-to-fastify",
+  "source": {
+    "framework": "express",
+    "pattern": "src/**/*.ts"
+  },
+  "target": {
+    "framework": "fastify",
+    "version": "4.0.0"
+  },
+  "agents": {
+    "analyzer": { "model": "claude-3-opus" },
+    "transformer": { "model": "claude-3-opus" },
+    "tester": { "model": "gpt-4" },
+    "reviewer": { "model": "gpt-4" }
+  },
+  "batching": {
+    "filesPerBatch": 10,
+    "parallelBatches": 3
+  },
+  "rollback": {
+    "onTestFailure": true
+  }
+}

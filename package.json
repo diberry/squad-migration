@@ -4,6 +4,9 @@
   "description": "Squad-powered code migration tool orchestration framework",
   "main": "dist/index.js",
   "types": "dist/index.d.ts",
+  "bin": {
+    "squad-migrate": "dist/cli/main.js"
+  },
   "scripts": {
     "build": "tsc",
     "test": "vitest",
